@@ -6,6 +6,7 @@ module Lib
 
 import Network.Wreq
 import Control.Lens
+import Control.Applicative
 -- import Data.Map as DMap
 import Data.ByteString.Lazy hiding (putStrLn, map)
 import Data.Aeson.Lens (_String, key )
@@ -31,24 +32,30 @@ data Quote = Quote
 
 -- fetchQuoteData :: String -> IO (Response ByteString)
 fetchQuoteData a =
-  let opts = defaults & param "foo" .~ ["bar", "quux"]
-  in getWith opts "http://httpbin.org/get"
+  let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsabrp6j1"]
+  in getWith opts "http://finance.yahoo.com/d/quotes.csv"
 
-createQuote :: IO (Response ByteString) -> Quote
-createQuote a =
-  Quote "a" (show (a ^. responseStatus . statusMessage))
+-- createQuote :: String -> String -> Quote
+-- createQuote n c = Quote n c
 
-getQuote :: String -> Quote
-getQuote = createQuote . fetchQuoteData
+-- getQuote :: String -> Quote
+-- getQuote = extractQuoteData (createQuote  fetchQuoteData)
 
-getQuotes :: [String] -> [Quote]
-getQuotes t = map getQuote t
+-- getQuotes :: [String] -> [Quote]
+-- getQuotes t = map getQuote t
 
 runApp :: IO ()
-runApp = do
-  let s = getQuotes ["TNE", "WSA", "GXY"]
+runApp = (^. responseBody) <$> fetchQuoteData "AAPL" >>= print
+
+  -- let tickers = ["TNE", "WSA", "GXY"]
+  -- rs <- fetchQuoteData "TNE"
+
+  -- let opts = defaults & param "s" .~ ["AAPL"] & param "f" .~ ["nsabrp6j1"]
+  -- r <- getWith opts "http://finance.yahoo.com/d/quotes.csv"
+
   -- let opts = defaults & param "foo" .~ ["bar", "quux"]
   -- r <- getWith opts "http://httpbin.org/get"
   -- let s = r ^. responseBody
-  putStrLn (show s)
+  -- putStrLn (show s)
+  -- putStrLn "test"
 

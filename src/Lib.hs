@@ -20,10 +20,12 @@ import Data.Aeson (Value)
 -- data MarketCap = Int
 -- data PoE = Float
 -- data ChgPct = Float
+type Name = String
+type Code = String
 
 data Quote = Quote
-  String -- name
-  String -- code
+  Name-- name
+  Code -- code
               -- Maybe Price
               -- Maybe MarketCap
               -- Maybe PoE
@@ -35,8 +37,8 @@ fetchQuoteData a =
   let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsabrp6j1"]
   in getWith opts "http://finance.yahoo.com/d/quotes.csv"
 
--- createQuote :: String -> String -> Quote
--- createQuote n c = Quote n c
+createQuote :: Name -> Quote
+createQuote n = Quote n "XYZ"
 
 -- getQuote :: String -> Quote
 -- getQuote = extractQuoteData (createQuote  fetchQuoteData)
@@ -44,11 +46,32 @@ fetchQuoteData a =
 -- getQuotes :: [String] -> [Quote]
 -- getQuotes t = map getQuote t
 
-runApp :: IO ()
-runApp = (^. responseBody) <$> fetchQuoteData "AAPL" >>= print
+-- runApp :: IO ()
+
+extractBody x =
+  (^. responseBody) <$> fetchQuoteData x
+
+getQuote y =
+  extractBody y
+
+other n [] = n
+other n (x:xs) = other (createQuote x:n) xs
+
+fprint :: Quote -> IO()
+fprint x = print x
+
+-- runApp :: IO()
+runApp =
+  sequence_ . map fprint $ (other [] ["AAPL", "GOOGL"])
+  -- putStrLn "test"
+  -- map putStrLn r
+  -- getQuote "AAPL" >>= print
+
+  -- putStrLn (show (doThings "AAPL"))
+  -- (>>= print) <*> (^. responseBody) <$> map fetchQuoteData ["AAPL"] 
 
   -- let tickers = ["TNE", "WSA", "GXY"]
-  -- rs <- fetchQuoteData "TNE"
+  -- r <- fetchQuoteData "TNE"
 
   -- let opts = defaults & param "s" .~ ["AAPL"] & param "f" .~ ["nsabrp6j1"]
   -- r <- getWith opts "http://finance.yahoo.com/d/quotes.csv"

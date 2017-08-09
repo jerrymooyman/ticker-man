@@ -4,22 +4,19 @@ module Lib
     ( runApp
     ) where
 
+import Debug.Trace
 import Network.Wreq
 import Control.Lens
 import Control.Applicative
+import Control.Monad
 -- import Data.Map as DMap
 import Data.ByteString.Lazy hiding (putStrLn, map)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Aeson.Lens (_String, key )
 import Data.Aeson (Value)
 
 -- type Resp = Response -- (Map String Value)
 
--- data String
--- data Code = String
--- data Price = Float
--- data MarketCap = Int
--- data PoE = Float
--- data ChgPct = Float
 type Name = String
 type Code = String
 
@@ -37,48 +34,27 @@ fetchQuoteData a =
   let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsabrp6j1"]
   in getWith opts "http://finance.yahoo.com/d/quotes.csv"
 
-createQuote :: Name -> Quote
+
+createQuote :: String -> Quote
 createQuote n = Quote n "XYZ"
 
--- getQuote :: String -> Quote
--- getQuote = extractQuoteData (createQuote  fetchQuoteData)
 
--- getQuotes :: [String] -> [Quote]
--- getQuotes t = map getQuote t
+byteStringToString = BS.unpack
 
--- runApp :: IO ()
+extractBody :: Response ByteString -> String
+extractBody = byteStringToString . (^. responseBody)
 
-extractBody x =
-  (^. responseBody) <$> fetchQuoteData x
 
-getQuote y =
-  extractBody y
+getQuote y = do
+  r <- fetchQuoteData y
+  let q = extractBody r
+  return (createQuote q)
 
-other n [] = n
-other n (x:xs) = other (createQuote x:n) xs
 
-fprint :: Quote -> IO()
-fprint x = print x
+fprint :: IO Quote -> IO()
+fprint q = q >>= print
 
--- runApp :: IO()
+
+runApp :: IO()
 runApp =
-  sequence_ . map fprint $ (other [] ["AAPL", "GOOGL"])
-  -- putStrLn "test"
-  -- map putStrLn r
-  -- getQuote "AAPL" >>= print
-
-  -- putStrLn (show (doThings "AAPL"))
-  -- (>>= print) <*> (^. responseBody) <$> map fetchQuoteData ["AAPL"] 
-
-  -- let tickers = ["TNE", "WSA", "GXY"]
-  -- r <- fetchQuoteData "TNE"
-
-  -- let opts = defaults & param "s" .~ ["AAPL"] & param "f" .~ ["nsabrp6j1"]
-  -- r <- getWith opts "http://finance.yahoo.com/d/quotes.csv"
-
-  -- let opts = defaults & param "foo" .~ ["bar", "quux"]
-  -- r <- getWith opts "http://httpbin.org/get"
-  -- let s = r ^. responseBody
-  -- putStrLn (show s)
-  -- putStrLn "test"
-
+  sequence_ . map fprint $ (fmap getQuote ["AAPL", "GOOGL"])

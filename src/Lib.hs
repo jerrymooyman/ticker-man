@@ -33,6 +33,14 @@ data Quote = Quote
               -- Maybe ChgPct
               deriving (Show)
 
+-- format string options
+-- n   : name
+-- s   : symbol
+-- a   : ask price
+-- b   : bid price
+-- r   : p/e ratio
+-- p6  : p/book ratio
+-- j1  : market cap
 fetchQuoteData :: T.Text -> IO (Response BS.ByteString)
 fetchQuoteData a =
   let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsabrp6j1"]
@@ -46,14 +54,18 @@ createQuote n = Quote n "XYZ"
 byteStringToString :: BS.ByteString -> String
 byteStringToString = BS.unpack
 
-extractBody :: Response BS.ByteString -> String
-extractBody = byteStringToString . (^. responseBody)
+-- extractBody :: Response BS.ByteString -> String
+-- extractBody = byteStringToString . (^. responseBody)
+extractBody = (^. responseBody)
 
-getQuote :: T.Text -> IO Quote
+-- getQuote :: T.Text -> IO Quote
 getQuote y = do
   r <- fetchQuoteData y
-  let q = extractBody r
-  return (createQuote q)
+  let csvData = extractBody r
+  case C.decode C.NoHeader csvData of
+    Left err -> return (createQuote "nothing")
+    Right v -> V.forM_ v $ \ name symbol ask bid pe pb mcap ->
+      return (createQuote "test")
 
 
 fprint :: IO Quote -> IO()

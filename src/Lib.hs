@@ -29,7 +29,15 @@ import GHC.Generics
 type Name = String
 type Code = String
 
-data Quote = Quote String
+data Quote = Quote {
+  name :: String
+, symbol :: String
+, ask :: Float
+, bid :: Float
+, pe :: Float
+, pb :: Float
+, mcap :: String
+}
   -- Name-- name
   -- Code -- code
               -- Maybe Price
@@ -56,13 +64,13 @@ instance C.ToRecord Quote
 -- j1  : market cap
 fetchQuoteData :: T.Text -> IO (Response BS.ByteString)
 fetchQuoteData a =
-  -- let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsabrp6j1"]
-  let opts = defaults & param "s" .~ [a] & param "f" .~ ["a"]
+  let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsabrp6j1"]
+  -- let opts = defaults & param "s" .~ [a] & param "f" .~ ["nsab"]
   in getWith opts "http://finance.yahoo.com/d/quotes.csv"
 
 
 createQuote :: String -> Quote
-createQuote n = Quote n 
+createQuote n = Quote n "xx" 0 0 0 0 "xx"
 
 
 byteStringToString :: BS.ByteString -> String
@@ -80,7 +88,7 @@ parseCsv = do
   let csvData = extractBody' r
   case C.decode C.NoHeader csvData of
     Left err -> putStrLn err
-    Right v -> V.forM_ v $ \ (Quote name) -> print $ Quote name
+    Right v -> V.forM_ v $ \ (Quote name symbol ask bid pe pb mcap) -> print $ Quote name symbol ask bid pe pb mcap
     -- Right v -> V.forM_ v $ \ (name, symbol, ask bid pe pb mcap -> return (createQuote "test")
 
 getQuote :: T.Text -> IO Quote
@@ -100,4 +108,4 @@ fprint y = y >>= print
 
 runApp :: IO()
 runApp =
-  sequence_ . map fprint $ (fmap getQuote ["AAPL", "GOOGL"])
+  mapM_ fprint $ fmap getQuote ["AAPL", "GOOGL"]
